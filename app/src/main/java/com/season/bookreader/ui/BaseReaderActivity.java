@@ -25,27 +25,31 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.TranslateAnimation;
 import android.widget.RelativeLayout;
 
-import com.lectek.lereader.core.bookformats.BookInfo;
-import com.lectek.lereader.core.bookformats.Catalog;
-import com.lectek.lereader.core.bookformats.Chapter;
-import com.lectek.lereader.core.bookformats.FormatPlugin;
-import com.lectek.lereader.core.bookformats.PluginManager;
-import com.lectek.lereader.core.bookformats.epub.Resource;
-import com.lectek.lereader.core.text.html.CssProvider;
-import com.lectek.lereader.core.text.html.CssProvider.ICssLoader;
-import com.lectek.lereader.core.text.html.DataProvider;
-import com.lectek.lereader.core.text.html.HtmlParser.TagHandler;
-import com.lectek.lereader.core.text.html.ICssProvider;
-import com.lectek.lereader.core.util.EncryptUtils;
-import com.lectek.lereader.core.util.LogUtil;
+import com.season.lib.bookformats.BookInfo;
+import com.season.lib.bookformats.Catalog;
+import com.season.lib.bookformats.Chapter;
+import com.season.lib.bookformats.FormatPlugin;
+import com.season.lib.bookformats.PluginManager;
+import com.season.lib.bookformats.epub.Resource;
+import com.season.lib.text.html.CssProvider;
+import com.season.lib.text.html.CssProvider.ICssLoader;
+import com.season.lib.text.html.DataProvider;
+import com.season.lib.text.html.HtmlParser.TagHandler;
+import com.season.lib.text.html.ICssProvider;
+import com.season.lib.util.EncryptUtils;
+import com.season.lib.util.LogUtil;
 import com.season.bookreader.R;
+import com.season.bookreader.frame.CatalogView;
+import com.season.bookreader.frame.ReaderMenuPopWin;
+import com.season.bookreader.model.Book;
+import com.season.bookreader.tagspan.ExpandTagHandler;
+import com.season.bookreader.tagspan.ReaderMediaPlayer;
+import com.season.bookreader.view.BaseReadView;
 
 public class BaseReaderActivity extends Activity implements BaseReadView.ReadViewCallback
 	,ReaderMediaPlayer.PlayerListener {

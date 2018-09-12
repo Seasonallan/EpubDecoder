@@ -4,7 +4,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import com.lectek.lereader.core.os.AbsThreadPool;
+import com.season.lib.os.AbsThreadPool;
 /**
  * 单线程线程池
  * @author lyw
