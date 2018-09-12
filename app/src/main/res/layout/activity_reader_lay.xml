@@ -1,12 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:layout_width="match_parent"
-	android:layout_height="match_parent"
-	android:orientation="vertical" >
-	<FrameLayout
-		android:id="@+id/read_view"
-		android:layout_width="match_parent"
-		android:layout_height="match_parent" />
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                xmlns:tonlin="http://schemas.android.com/apk/res/com.season.bookreader"
+                android:orientation="vertical">
+
+    <com.season.bookreader.view.PullRefreshLayout
+        android:id="@+id/pull_container"
+        android:layout_width="match_parent" android:layout_height="match_parent"
+        tonlin:actionViewId="@+id/action_view" tonlin:toolViewId="@+id/tool_view"
+        android:scrollbars="vertical" android:descendantFocusability="blocksDescendants">
+
+        <include
+            android:id="@+id/action_view"
+            layout="@layout/book_mark_refresh_layout" />
+
+        <include
+            android:id="@+id/tool_view"
+            layout="@layout/tool_layout" />
+        <FrameLayout
+            android:id="@+id/read_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </com.season.bookreader.view.PullRefreshLayout>
 	<RelativeLayout
 		android:id="@+id/content_lay" 
 		android:layout_width="match_parent"

@@ -53,4 +53,26 @@
         <item>分享</item>
         <item>删除</item>
     </string-array>
+
+
+    <!-- 下拉刷新 -->
+    <string name="note_pull_down">下拉可以刷新&#8230;</string>
+    <string name="note_pull_refresh">松开即可刷新&#8230;</string>
+    <string name="note_pull_loading">加载中&#8230;</string>
+    <string name="note_update_at">更新于：%1$s</string>
+    <string name="note_not_update">尚未更新</string>
+
+    <!-- 书签 -->
+    <string name="book_label_goto_position">跳转到书签位置</string>
+    <string name="book_label_delete_label">删除书签</string>
+    <string name="book_label_add_success">添加书签成功!</string>
+    <string name="book_label_del_success">删除书签成功!</string>
+    <string name="book_label_add_fail">上传失败,已保存本地书签</string>
+    <string name="book_label_del_fail">上传失败,已保存本地书签</string>
+    <string name="book_label_add_pull">下拉添加书签&#8230;</string>
+    <string name="book_label_del_pull">下拉删除书签&#8230;</string>
+    <string name="book_label_add_pull_refresh">松开即可添加书签&#8230;</string>
+    <string name="book_label_del_pull_refresh">松开即可删除书签&#8230;</string>
+    <string name="book_label_add_pull_loading">添加中&#8230;</string>
+    <string name="book_label_del_pull_loading">删除中&#8230;</string>
 </resources>

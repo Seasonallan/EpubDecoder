@@ -18,4 +18,5 @@
 	<!-- 颜色规范end -->
 
     <color name="dialog_bg">#dadada</color>
+    <color name="common_5">#818081</color>
 </resources>

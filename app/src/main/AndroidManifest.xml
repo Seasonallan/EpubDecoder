@@ -17,6 +17,9 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <provider
+            android:name=".provider.DataProvider"
+            android:authorities="com.season.bookreader.provider.DataProvider" />
     </application>
 
 </manifest>

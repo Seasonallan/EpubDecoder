@@ -3,7 +3,9 @@ package com.season.bookreader.ui;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 
 import android.app.Activity;
 import android.content.Context;
@@ -17,6 +19,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
@@ -26,15 +29,22 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
+import android.view.animation.AnimationUtils;
 import android.view.animation.TranslateAnimation;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
+import com.season.bookreader.anim.AbsVerGestureAnimController;
+import com.season.bookreader.bookmarks.BookMark;
+import com.season.bookreader.bookmarks.BookMarkDatas;
 import com.season.bookreader.digests.AbsTextSelectHandler;
 import com.season.bookreader.view.AbsReadView;
 import com.season.bookreader.view.BaseReadView2;
 import com.season.bookreader.view.EpubReadView;
 import com.season.bookreader.view.IReaderView;
+import com.season.bookreader.view.PullRefreshLayout;
 import com.season.lib.bookformats.BookInfo;
 import com.season.lib.bookformats.Catalog;
 import com.season.lib.bookformats.Chapter;
@@ -59,7 +69,9 @@ import com.season.bookreader.tagspan.ReaderMediaPlayer;
 import com.season.bookreader.view.BaseReadView;
 import com.season.lib.util.ToastUtil;
 
-public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.PlayerListener, IReaderView.IReadCallback, AbsTextSelectHandler.ITouchEventDispatcher {
+public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.PlayerListener,
+        IReaderView.IReadCallback, AbsTextSelectHandler.ITouchEventDispatcher,
+        PullRefreshLayout.OnPullListener, PullRefreshLayout.OnPullStateListener, AbsVerGestureAnimController.IVertialTouchEventDispatcher {
 	/**内容密钥*/
 	private String secretKey = null;
 	private static final String TAG = BaseReaderActivity.class.getSimpleName();
@@ -113,11 +125,42 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 		showReaderContentView();
 		initClickDetector();
 		init();
+        initPullView();
 		ReaderMediaPlayer.getInstance().addPlayerListener(this);
 
         overridePendingTransition(0, 0);
         LogUtil.e("status  onCreated");
 	}
+
+    private Animation mRotateUpAnimation;
+    private Animation mRotateDownAnimation;
+    private PullRefreshLayout mPullLayout;
+    private TextView mActionText;
+    private TextView mTimeText;
+    private ImageView mBookMarkSignImage;
+    private View mProgress;
+    private View mActionImage;
+    protected void initPullView() {
+        mRotateUpAnimation = AnimationUtils.loadAnimation(this_,
+                R.anim.rotate_up);
+        mRotateDownAnimation = AnimationUtils.loadAnimation(this_,
+                R.anim.rotate_down);
+
+        mPullLayout = (PullRefreshLayout) findViewById(R.id.pull_container);
+        mPullLayout.setOnActionPullListener(this);
+        mPullLayout.setOnPullStateChangeListener(this);
+
+        mProgress = findViewById(android.R.id.progress);
+        mActionImage = findViewById(android.R.id.icon);
+        mActionText = (TextView) findViewById(R.id.pull_note);
+        mTimeText = (TextView) findViewById(R.id.refresh_time);
+        mBookMarkSignImage = (ImageView) findViewById(R.id.iv_book_mark_sign);
+
+        mTimeText.setText(R.string.note_not_update);
+        mActionText.setText(R.string.note_pull_down);
+    }
+    private AbsVerGestureAnimController mAbsVerGestureAnimController = new AbsVerGestureAnimController();
+
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
@@ -400,9 +443,17 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 		}
 		return super.dispatchTouchEvent(ev);
 	}
-	
-	@Override
+
+    @Override
+    public void onPointerCaptureChanged(boolean hasCapture) {
+
+    }
+
+    @Override
 	public boolean onTouchEvent(MotionEvent ev) {
+        if(isPullEnabled() && mAbsVerGestureAnimController.handlerTouch(ev, this)){
+            return false;
+        }
 		return mReadView.handlerTouchEvent(ev);
 	}
 	
@@ -746,4 +797,165 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
     public void dispatchTouchEventCallBack(MotionEvent ev) {
         dispatchTouchEvent(ev);
     }
+
+
+
+
+    /**
+     * 当前页面是否书签
+     */
+    private boolean isCurrentBookMarked(){
+        return BookMarkDatas.getInstance().findBookMarkPosition(mReadView.newUserBookmark()) != -1 ;
+    }
+
+    private boolean mInLoading = false;
+    @Override
+    public void onPullOut() {
+        if (!mInLoading) {
+            if(isCurrentBookMarked()){
+                mBookMarkSignImage.setImageResource(R.drawable.book_mark_unsign);
+                mActionText.setText(R.string.book_label_del_pull_refresh);
+            }else{
+                mBookMarkSignImage.setImageResource(R.drawable.book_mark_sign);
+                mActionText.setText(R.string.book_label_add_pull_refresh);
+            }
+            mActionImage.clearAnimation();
+            mActionImage.startAnimation(mRotateUpAnimation);
+        }
+
+    }
+
+    @Override
+    public void onPullIn() {
+        if (!mInLoading) {
+            if(isCurrentBookMarked()){
+                mBookMarkSignImage.setImageResource(R.drawable.book_mark_sign);
+                mActionText.setText(R.string.book_label_del_pull);
+            }else{
+                mBookMarkSignImage.setImageResource(R.drawable.book_mark_unsign);
+                mActionText.setText(R.string.book_label_add_pull);
+            }
+
+            mActionImage.clearAnimation();
+            mActionImage.startAnimation(mRotateDownAnimation);
+        }
+    }
+
+    @Override
+    public void onSnapToTop() {
+        if (!mInLoading) {
+            mInLoading = true;
+            mPullLayout.setEnableStopInActionView(false);
+            mActionImage.clearAnimation();
+            mActionImage.setVisibility(View.GONE);
+            mProgress.setVisibility(View.VISIBLE);
+            if(isCurrentBookMarked()){
+                mBookMarkSignImage.setImageResource(R.drawable.book_mark_unsign);
+                mActionText.setText(R.string.book_label_del_pull_loading);
+            }else{
+                mBookMarkSignImage.setImageResource(R.drawable.book_mark_sign);
+                mActionText.setText(R.string.book_label_add_pull_loading);
+            }
+            mHandler.sendEmptyMessage(MSG_LOADING);
+            mTimeText.setText(this_.getString(R.string.note_update_at, getCurrentTimeByMDHM()));
+        }
+
+    }
+
+    public static String getCurrentTimeByMDHM() {
+        SimpleDateFormat var0 = new SimpleDateFormat("MM-dd HH:mm");
+        Calendar var1 = Calendar.getInstance();
+        return var0.format(var1.getTime());
+    }
+
+    private final static int MSG_LOADING = 0x1;
+    private final static int MSG_LOADED = 0x2;
+    private Handler mHandler = new Handler(){
+        public void handleMessage(android.os.Message msg) {
+            int what = msg.what;
+            switch (what) {
+                case MSG_LOADING:
+                    //下拉后做的网路操作
+                    if(isCurrentBookMarked()){
+                        delBookLabel();
+                    }else{
+                        addBookLabel();
+                    }
+                    break;
+                case MSG_LOADED:
+                    dataLoaded();
+                    break;
+
+                default:
+                    break;
+            }
+        };
+    };
+
+    /**
+     * 添加书签
+     */
+    private void addBookLabel(){
+        BookMark userMark = mReadView.newUserBookmark();
+        if(BookMarkDatas.getInstance().addBookMark(userMark)){
+            ToastUtil.showToast(this_, R.string.book_label_add_success);
+            mReadView.getContentView().invalidate();
+        }
+        dataLoaded();
+    }
+
+    /**
+     * 删除用户书签
+     */
+    private void delBookLabel(){
+        BookMark userMark = mReadView.newUserBookmark();
+        if(BookMarkDatas.getInstance().deleteBookMark(userMark)){
+            ToastUtil.showToast(this_, R.string.book_label_del_success);
+            mReadView.getContentView().invalidate();
+        }
+        dataLoaded();
+    }
+    /**刷新加载结束*/
+    private void dataLoaded() {
+        if (mInLoading) {
+            mInLoading = false;
+            mPullLayout.setEnableStopInActionView(false);
+            mPullLayout.hideActionView();
+            mActionImage.setVisibility(View.VISIBLE);
+            mProgress.setVisibility(View.GONE);
+
+            if (mPullLayout.isPullOut()) {
+                mActionText.setText(R.string.note_pull_refresh);
+                mActionImage.clearAnimation();
+                mActionImage.startAnimation(mRotateUpAnimation);
+            } else {
+                mActionText.setText(R.string.note_pull_down);
+            }
+        }
+    }
+    @Override
+    public void onShow() {
+
+    }
+
+    @Override
+    public void onHide() {
+
+    }
+
+    @Override
+    public boolean isPullEnabled() {
+        return mReadView.getTextSelectHandler() != null;
+    }
+
+    @Override
+    public void verticalTouchEventCallBack(MotionEvent ev) {
+        mPullLayout.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    public void unVerticalTouchEventCallBack(MotionEvent ev) {
+        onTouchEvent(ev);
+    }
+
 }
