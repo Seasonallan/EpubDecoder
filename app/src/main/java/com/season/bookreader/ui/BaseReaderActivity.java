@@ -1,8 +1,6 @@
 package com.season.bookreader.ui;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -25,39 +23,49 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.TranslateAnimation;
+import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 
+import com.season.bookreader.digests.AbsTextSelectHandler;
+import com.season.bookreader.view.AbsReadView;
+import com.season.bookreader.view.BaseReadView2;
+import com.season.bookreader.view.EpubReadView;
+import com.season.bookreader.view.IReaderView;
 import com.season.lib.bookformats.BookInfo;
 import com.season.lib.bookformats.Catalog;
 import com.season.lib.bookformats.Chapter;
 import com.season.lib.bookformats.FormatPlugin;
 import com.season.lib.bookformats.PluginManager;
 import com.season.lib.bookformats.epub.Resource;
+import com.season.lib.os.SyncThreadPool;
 import com.season.lib.text.html.CssProvider;
 import com.season.lib.text.html.CssProvider.ICssLoader;
 import com.season.lib.text.html.DataProvider;
 import com.season.lib.text.html.HtmlParser.TagHandler;
 import com.season.lib.text.html.ICssProvider;
 import com.season.lib.util.EncryptUtils;
+import com.season.lib.util.FileUtil;
 import com.season.lib.util.LogUtil;
 import com.season.bookreader.R;
-import com.season.bookreader.frame.CatalogView;
-import com.season.bookreader.frame.ReaderMenuPopWin;
+import com.season.bookreader.fragment.CatalogView;
+import com.season.bookreader.fragment.ReaderMenuPopWin;
 import com.season.bookreader.model.Book;
 import com.season.bookreader.tagspan.ExpandTagHandler;
 import com.season.bookreader.tagspan.ReaderMediaPlayer;
 import com.season.bookreader.view.BaseReadView;
+import com.season.lib.util.ToastUtil;
 
-public class BaseReaderActivity extends Activity implements BaseReadView.ReadViewCallback
-	,ReaderMediaPlayer.PlayerListener {
+public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.PlayerListener, IReaderView.IReadCallback, AbsTextSelectHandler.ITouchEventDispatcher {
 	/**内容密钥*/
 	private String secretKey = null;
 	private static final String TAG = BaseReaderActivity.class.getSimpleName();
 	private BaseReaderActivity this_ = this;
-	private BaseReadView mReadView;
+    private FrameLayout mReadContainerView;
+    private BaseReadView mReadView;
 	private CatalogView mCatalogView;
 	private RelativeLayout mCatalogLay;
 	private FormatPlugin mPlugin;
@@ -75,45 +83,7 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 	private boolean isInit;
 	private boolean hasAddBookMark = false;
 	private ClickDetector mClickDetector;
-	
-	public static boolean copyFileToFile(Context context,String path, InputStream is) {
-		try {
-			File file = new File(path);
-//			if(file.exists()){
-//				return true;
-//			}
-			BufferedInputStream bis = new BufferedInputStream(is);
-			FileOutputStream fos = new FileOutputStream(file);
-			int bufferSize = 4096;
-			byte[] b = new byte[bufferSize];
-			int nRead;
-			int currentBytes = 0;
-			int bytesNotified = currentBytes;
-			long timeLastNotification = 0;
-			for (;;) {
-				nRead = bis.read(b, 0, bufferSize);
-				if (nRead == -1) {
-					break;
-				}
-				currentBytes += nRead;
-				fos.write(b, 0, nRead);
-				long now = System.currentTimeMillis();
-				if (currentBytes - bytesNotified > bufferSize
-						&& now - timeLastNotification > 1500) {
-					bytesNotified = currentBytes;
-					timeLastNotification = now;
-				}
-			}
-			fos.flush();
-			fos.close();
-			is.close();
-		} catch (Exception e) {
-            e.printStackTrace();
-			return false;
-		}
-		return true;
-	}
-	
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -137,18 +107,15 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 		toolbarTP = toolTouchAreaH >> 1;
 		toolbarBP = screenHeight - toolbarTP;
 		setContentView(R.layout.activity_reader_lay);
-		mReadView = (BaseReadView) findViewById(R.id.read_view);
-		mCatalogLay = (RelativeLayout) findViewById(R.id.content_lay);
+        mReadContainerView = findViewById(R.id.read_view);
+		mCatalogLay =  findViewById(R.id.content_lay);
 		initReaderCatalogView();
 		showReaderContentView();
-		initMenu();
 		initClickDetector();
 		init();
 		ReaderMediaPlayer.getInstance().addPlayerListener(this);
 
-        //overridePendingTransition(0, 0);
-		//getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-		//getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        overridePendingTransition(0, 0);
         LogUtil.e("status  onCreated");
 	}
 	@Override
@@ -158,7 +125,7 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 		if(mSyncThreadPool != null){
 			mSyncThreadPool.destroy();
 			ReaderMediaPlayer.getInstance().release();
-			mReadView.release();
+			mReadView.onDestroy();
 		}
 	}
 
@@ -173,7 +140,7 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 			public boolean onClickCallBack(MotionEvent ev) {
 				float x = ev.getX();
 				float y = ev.getY();
-				if (mReadView.onClickCallBack(ev)) {
+				if (mReadView.dispatchClickEvent(ev)) {
 					return true;
 				} else if (x > toolbarLP && x < toolbarRP && 
 						y > toolbarTP && y < toolbarBP) {
@@ -205,7 +172,7 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 
 					@Override
 					public void onGotoPage(int pageNum) {
-						mReadView.gotoTotalPage(pageNum, true);
+						mReadView.gotoPage(pageNum, true);
 					}
 
 					@Override
@@ -228,12 +195,12 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 
 					@Override
 					public int getPageNums() {
-						return mReadView.getTotalPageSize();
+						return mReadView.getMaxReadProgress();
 					}
 
 					@Override
 					public int getCurPage() {
-						return mReadView.getCurTotalPageIndex();
+						return mReadView.getCurReadProgress();
 					}
 
 					@Override
@@ -312,7 +279,7 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 
 			@Override
 			public Catalog getCurrentCatalog() {
-				return mPlugin.getCatalogByIndex(mReadView.getCurrentChapterIndex());
+				return mReadView.getCurrentCatalog();
 			}
 
 			@Override
@@ -341,7 +308,7 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 	}
 
 	protected void showReaderCatalogView() {
-		mReadView.closeVideo();
+		mReadView.onHideContentView();
 		if (mCatalogView != null && mPlugin != null && mCatalogView.isShowing == false) {
 			if (mCatalogView.getParent() == null) {
 				mCatalogLay.addView(mCatalogView);
@@ -408,7 +375,7 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 
 	@Override
 	public boolean dispatchKeyEvent(KeyEvent event) {
-		if(mReadView.dispatchVideoKeyEvent(event)){
+		if(mReadView.onActivityDispatchKeyEvent(event)){
 			return true;
 		}
 		return super.dispatchKeyEvent(event);
@@ -416,15 +383,18 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent ev) {
-		if (!isInit || !mReadView.isFirstDraw()) {
+		if (!isInit) {
 			return false;
 		}
-		if(mReadView.dispatchVideoTouchEvent(ev)){
+		if(mReadView.onActivityDispatchTouchEvent(ev)){
 			return false;
 		}
 		if(mCatalogLay.isShown()){
 			return super.dispatchTouchEvent(ev);
 		}
+        if(mReadView.handlerSelectTouchEvent(ev, this)){
+            return false;
+        }
 		if(mClickDetector.onTouchEvent(ev)){
 			return false;
 		}
@@ -442,19 +412,10 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 		return super.onCreateOptionsMenu(menu);
 	}
 
-//	@Override
-//	public boolean onMenuOpened(int featureId, Menu menu) {
-//		if (!mReaderMenuPopWin.isShowing()) {
-//			showMenu();
-//		} else {
-//			dismissMenu();
-//		}
-//		return false;
-//	}
-	
+
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		if ((!isInit || !mReadView.isFirstDraw()) && keyCode != KeyEvent.KEYCODE_BACK) {
+		if ((!isInit) && keyCode != KeyEvent.KEYCODE_BACK) {
 			return true;
 		}
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
@@ -482,7 +443,7 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 	
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		if ((!isInit || !mReadView.isFirstDraw()) && keyCode != KeyEvent.KEYCODE_BACK) {
+		if ((!isInit) && keyCode != KeyEvent.KEYCODE_BACK) {
 			return true;
 		}
 		if(!ReaderMediaPlayer.getInstance().isNeedControlVolume()){
@@ -507,10 +468,8 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 	}
 	
 	private String getBookFielPath(){
-		String path = null;
-		String pathDir = null;
-        pathDir = getCacheDir() + File.separator;
-        path = pathDir + "book.epub";
+		String pathDir = getCacheDir() + File.separator;
+        String path =pathDir + "book.epub";
 		File fileDir = new File(pathDir);
 		if(!fileDir.exists()){
 			fileDir.mkdirs();
@@ -519,7 +478,7 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 	}
 	
 	private void init() {
-		new Thread() {
+       new Thread() {
 			int requestPageCharIndex = 0;
 			int requestCatalogIndex = 0;
 			@Override
@@ -527,7 +486,7 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 				try {
 					InputStream is = getResources().openRawResource(R.drawable.book);
 					mBook.setPath(getBookFielPath());
-					if(!copyFileToFile(this_, mBook.getPath(), is)){
+					if(!FileUtil.copyFileToFile(mBook.getPath(), is)){
                         LogUtil.e("status  error");
 			        	finish();
 			        	return;
@@ -547,9 +506,14 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 					runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-							isInit = true;
+                            mReadView = new EpubReadView(BaseReaderActivity.this, mBook, BaseReaderActivity.this);
+                            mReadContainerView.addView(mReadView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                            isInit = true;
+                            mReadView.onCreate(null);
 							mCatalogView.setBookInfo(bookInfo.title, bookInfo.author);
-							mReadView.initView(mBook.getBookId(),this_,mPlugin.getChapterIds().size(), requestCatalogIndex, requestPageCharIndex);
+
+                            initMenu();
+							mReadView.onInitReaderInBackground(requestCatalogIndex, requestPageCharIndex, secretKey);
 						}
 					});
 				} catch (Exception e) {
@@ -558,104 +522,25 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 			}
 		}.start();
 	}
-	
-	@Override
+
+    @Override
+    public void onChapterChange(ArrayList<Catalog> chapters) {
+        if(mCatalogView != null){
+            mCatalogView.setCatalogData(chapters);
+            mCatalogView.refreshCatalog();
+        }
+    }
+
+    @Override
 	public void onPageChange(int totalPageIndex,int max) {
 		mReaderMenuPopWin.setJumpSeekBarProgress(totalPageIndex, max);
 	}
 
-	@Override
-	public boolean hasBookMark() {
-		return hasAddBookMark;
-	}
+    @Override
+    public void onLayoutProgressChange(int progress, int max) {
 
-	@Override
-	public String getChapterInputStream(int chapterIndex) {
-		//用于触发购买点
-		String content = "<html><body>该章节未购买</body></html>";
-		ArrayList<String> chapterIds = mPlugin.getChapterIds();
-		if (chapterIndex < 0 || chapterIndex > chapterIds.size() - 1) {
-			return content;
-		}
-		String catalogId = chapterIds.get(chapterIndex);
-		if (TextUtils.isEmpty(catalogId)) {
-			return content;
-		}
-		Chapter chapter = null;
-		try {
-			chapter = mPlugin.getChapter(catalogId);
-		} catch (Exception e) {
-			LogUtil.e(TAG, e);
-		}
-		if (chapter != null) {
-			byte[] contentByte = null;
-			try {
-				if (TextUtils.isEmpty(secretKey)) {
-					contentByte = chapter.getContent();
-				}else {
-					contentByte = EncryptUtils.decryptByAES(chapter.getContent(),secretKey);
-				}
-				if(contentByte != null){
-					return new String(contentByte);
-				}
-			} catch (Exception e) {
-				if(contentByte != null){
-					return new String(contentByte);
-				}
-			}
-		}
-		return content;
-	}
+    }
 
-	@Override
-	public TagHandler getTagHandler() {
-		return new ExpandTagHandler(mDataProvider);
-	}
-
-	@Override
-	public ICssProvider getCssProvider() {
-		return mCssProvider;
-	}
-
-	@Override
-	public DataProvider getDataProvider() {
-		return mDataProvider;
-	}
-
-	@Override
-	public String getBookName() {
-		return mBook.getBookName();
-	}
-
-	@Override
-	public String getChapterName(int chapterIndex) {
-		Catalog catalog = mPlugin.getCatalogByIndex(chapterIndex);
-		if(catalog != null && !TextUtils.isEmpty(catalog.getText())){
-			return catalog.getText();
-		}
-		return "";
-	}
-
-	@Override
-	public void onLayoutChapterFinish(int progress, int max) {
-		if(progress == 0){
-			ArrayList<Catalog> catalogs = mPlugin.getCatalog();
-			for (Catalog catalog : catalogs) {
-				catalog.setPageIndex(null);
-			}
-			mCatalogView.refreshCatalog();
-		}else if(progress == max){
-			ArrayList<Catalog> catalogs = mPlugin.getCatalog();
-			for (Catalog catalog : catalogs) {
-				int index = mReadView.getTotalPageIndex(mPlugin.getChapterIndex(catalog), 0);
-				if(index >= 0){
-					catalog.setPageIndex(++index);
-				}
-			}
-			mCatalogView.refreshCatalog();
-		}
-		mReaderMenuPopWin.setLayoutChapterProgress(progress, max);
-	}
 
 	@Override
 	public void onNotPreContent() {
@@ -666,12 +551,37 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 	public void onNotNextContent() {
 		ToastUtil.showToast(this, "已经是最后一页了");// TODO
 	}
-	
-	@Override
-	public boolean checkNeedBuy(int catalogIndex){
-		return false;
-	}
-	
+
+    @Override
+    public boolean checkNeedBuy(int catalogIndex, boolean isNeedBuy) {
+        return false;
+    }
+
+    @Override
+    public void showLoadingDialog(int resId) {
+
+    }
+
+    @Override
+    public void hideLoadingDialog() {
+
+    }
+
+    @Override
+    public boolean hasShowBookMark(int chapterId, int pageStart, int pageEnd) {
+        return false;
+    }
+
+    @Override
+    public boolean setFreeStart_Order_Price(int feeStart, boolean isOrdered, String price, String limitPrice) {
+        return false;
+    }
+
+    @Override
+    public void setCebBookId(String cebBookId) {
+
+    }
+
 	@Override
 	public void onPlayStateChange(int state, String voiceSrc) {
 		if(state == ReaderMediaPlayer.STATE_COMPLETION){
@@ -831,4 +741,9 @@ public class BaseReaderActivity extends Activity implements BaseReadView.ReadVie
 			return resource != null;
 		}
 	};
+
+    @Override
+    public void dispatchTouchEventCallBack(MotionEvent ev) {
+        dispatchTouchEvent(ev);
+    }
 }

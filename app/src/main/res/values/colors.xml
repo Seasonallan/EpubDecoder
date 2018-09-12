@@ -16,4 +16,6 @@
 	<color name="common_brown_1">#546570</color>
 	<color name="common_light_black_5">#afb8bd</color>
 	<!-- 颜色规范end -->
+
+    <color name="dialog_bg">#dadada</color>
 </resources>

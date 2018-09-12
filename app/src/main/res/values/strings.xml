@@ -25,4 +25,32 @@
 	<string name="reader_menu_item_font_size_max_tip">当前为最大字体</string>
 	<string name="reader_menu_item_font_size_min_tip">当前为最小字体</string>
 	<string name="reader_menu_automatic_brightness_tip">若调节失败，请禁用系统自动亮度调节</string>
+
+
+    <string-array name="auto_delayed">
+        <item>5000</item>
+        <item>10000</item>
+        <item>15000</item>
+        <item>20000</item>
+        <item>25000</item>
+        <item>30000</item>
+        <item>35000</item>
+        <item>40000</item>
+        <item>45000</item>
+        <item>50000</item>
+        <item>55000</item>
+        <item>60000</item>
+    </string-array>
+    <string-array name="book_digests_menu_one">
+        <item>高亮</item>
+        <item>复制</item>
+        <item>笔记</item>
+        <item>分享</item>
+    </string-array>
+    <string-array name="book_digests_menu_two">
+        <item>复制</item>
+        <item>笔记</item>
+        <item>分享</item>
+        <item>删除</item>
+    </string-array>
 </resources>

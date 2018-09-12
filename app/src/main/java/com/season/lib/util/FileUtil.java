@@ -39,8 +39,48 @@ public final class FileUtil {
 			return false;
 		}
 	}
-	
-	/** SDCARD的根目录
+
+    /**
+     * 检查路径有效性。形如“/sdcard/abc/”认为是目录路径，形如“/sdcard/abc”认为是文件路径
+     *
+     * 如果autoMakePath为true则自动创建目录和文件
+     *
+     * @param path	路径
+     * @param autoMakePath	是否自动创建路径目录
+     * @return 文件或目录存或则autoMakePath为true并且创建成功 返回true，否则返回false
+     */
+    public static boolean checkPath(String path, boolean autoMakePath) {
+        if(TextUtils.isEmpty(path)) {
+            return false;
+        }
+
+        boolean result = new File(path).exists();
+
+        if(!result && autoMakePath) {
+            String filePath = null;
+            //如果路径格式为“/sdcard/abc/name”，则认为最后一级是文件
+            int lastIndex = path.lastIndexOf(File.separatorChar);
+            if( lastIndex != path.length() - 1 && lastIndex > 0) {
+                filePath = path;
+                path = path.substring(0, lastIndex);
+            }
+
+            File file = new File(path);
+            result = file.mkdirs();
+
+            //如果最后一级是文件则创建
+            if(filePath != null) {
+                File newFile = new File(filePath);
+                try {
+                    result = newFile.createNewFile();
+                }catch(IOException e) {}
+            }
+        }
+
+        return result;
+    }
+
+    /** SDCARD的根目录
 	 * @return
 	 */
 	public static File getExternalStorageDirectory(){
@@ -368,8 +408,48 @@ public final class FileUtil {
 		
 		return false;
 	}
-	
-	/**
+
+
+    public static boolean copyFileToFile(String path, InputStream is) {
+        try {
+            File file = new File(path);
+//			if(file.exists()){
+//				return true;
+//			}
+            BufferedInputStream bis = new BufferedInputStream(is);
+            FileOutputStream fos = new FileOutputStream(file);
+            int bufferSize = 4096;
+            byte[] b = new byte[bufferSize];
+            int nRead;
+            int currentBytes = 0;
+            int bytesNotified = currentBytes;
+            long timeLastNotification = 0;
+            for (;;) {
+                nRead = bis.read(b, 0, bufferSize);
+                if (nRead == -1) {
+                    break;
+                }
+                currentBytes += nRead;
+                fos.write(b, 0, nRead);
+                long now = System.currentTimeMillis();
+                if (currentBytes - bytesNotified > bufferSize
+                        && now - timeLastNotification > 1500) {
+                    bytesNotified = currentBytes;
+                    timeLastNotification = now;
+                }
+            }
+            fos.flush();
+            fos.close();
+            is.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
 	 * 删除文件夹里面的所有文件
 	 * 
 	 * @param folderPath

@@ -5,6 +5,7 @@ import java.io.File;
 import android.text.TextUtils;
 
 import com.season.lib.bookformats.epub.EpubPlugin;
+import com.season.lib.txtumd.txt.TxtPlugin;
 
 /** 插件管理；单实例
  * @author mingkg21
@@ -37,9 +38,9 @@ public class PluginManager {
 	
 	private FormatPlugin getFormatPlugin(String filePath){
 		String path = filePath.toLowerCase();
-		if (path.endsWith(EXTENSION_EPUB)) {
-			return new EpubPlugin(filePath);
-		}
+        if (path.endsWith(EXTENSION_EPUB)) {
+            return new EpubPlugin(filePath);
+        }
 		return null;
 	}
 	

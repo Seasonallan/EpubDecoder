@@ -1,4 +1,4 @@
-package com.season.bookreader.ui;
+package com.season.lib.util;
 
 import android.content.Context;
 import android.widget.Toast;

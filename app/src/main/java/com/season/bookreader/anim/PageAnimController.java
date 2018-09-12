@@ -12,6 +12,7 @@ import android.view.MotionEvent;
 public abstract class PageAnimController{
 	public static final int ANIM_TYPE_PAGE_TURNING = 0;
 	public static final int ANIM_TYPE_TRANSLATION = 1;
+    public static final int ANIM_TYPE_AUTO = 2;
 	protected Context mContext;
 	
 	public static PageAnimController create(Context context,int type){
@@ -20,7 +21,10 @@ public abstract class PageAnimController{
 			pageAnimController = new PageTurningAnimController(context);
 		}else if(ANIM_TYPE_TRANSLATION == type){
 			pageAnimController = new HorTranslationAnimController(context);
-		}
+		}else if(ANIM_TYPE_AUTO == type){
+            pageAnimController = new PageTurningAnimController(context);
+            //pageAnimController = new AutoAnimController(context);
+        }
 		return pageAnimController;
 	}
 	

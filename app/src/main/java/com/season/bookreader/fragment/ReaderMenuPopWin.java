@@ -1,4 +1,4 @@
-package com.season.bookreader.frame;
+package com.season.bookreader.fragment;
 
 import java.util.ArrayList;
 
@@ -36,7 +36,7 @@ import com.season.bookreader.model.MenuItem;
 import com.season.bookreader.adapter.MenuItemAdapter;
 import com.season.bookreader.model.ReadSetting;
 import com.season.bookreader.tagspan.ReaderMediaPlayer;
-import com.season.bookreader.ui.ToastUtil;
+import com.season.lib.util.ToastUtil;
 import com.season.bookreader.view.CheckedGridView;
 import com.season.bookreader.view.CheckedGridView.OnItemCheckedStateChangeListener;
 import com.season.bookreader.tagspan.ReaderMediaPlayer.PlayerListener;

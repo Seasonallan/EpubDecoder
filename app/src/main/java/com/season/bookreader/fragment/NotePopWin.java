@@ -1,4 +1,4 @@
-package com.season.bookreader.frame;
+package com.season.bookreader.fragment;
 
 import android.graphics.Color;
 import android.graphics.Rect;
@@ -15,7 +15,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.season.bookreader.R;
-import com.season.bookreader.frame.BasePopupWindow;
 
 public class NotePopWin extends BasePopupWindow {
 	private TextView mTextView;

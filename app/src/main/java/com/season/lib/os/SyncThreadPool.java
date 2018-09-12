@@ -1,4 +1,4 @@
-package com.season.bookreader.ui;
+package com.season.lib.os;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
