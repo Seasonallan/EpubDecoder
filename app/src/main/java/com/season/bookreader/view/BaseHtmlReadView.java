@@ -229,6 +229,12 @@ public abstract class BaseHtmlReadView extends BaseReadView implements ReaderMed
 	@Override
 	protected void onLayout(boolean changed, int left, int top, int right,
 			int bottom) {
+        if (mPageManager.isInit()){
+            return;
+        }
+        if (right - left < 10){
+            return;
+        }
 		KeyguardManager mKeyguardManager = (KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
 	    if (mKeyguardManager.inKeyguardRestrictedInputMode()) {
 	    	isKeyguard = true;
@@ -247,6 +253,8 @@ public abstract class BaseHtmlReadView extends BaseReadView implements ReaderMed
 		if(isChanged){
 			setUnInit();
 		}
+
+
 		createTextSelectHandler();
 		createPageManager();
 	}

@@ -19,6 +19,9 @@
 
     </style>
 
+    <item type="id" name="statusbarutil_fake_status_bar_view" />
+    <item type="id" name="statusbarutil_translucent_view" />
+
     <declare-styleable name="PullActivateLayout">
         <attr name="actionViewId" format="reference" />
         <attr name="toolViewId" format="reference" />

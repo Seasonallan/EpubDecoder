@@ -36,6 +36,7 @@ import com.season.bookreader.model.MenuItem;
 import com.season.bookreader.adapter.MenuItemAdapter;
 import com.season.bookreader.model.ReadSetting;
 import com.season.bookreader.tagspan.ReaderMediaPlayer;
+import com.season.lib.util.ScreenUtil;
 import com.season.lib.util.ToastUtil;
 import com.season.bookreader.view.CheckedGridView;
 import com.season.bookreader.view.CheckedGridView.OnItemCheckedStateChangeListener;
@@ -45,7 +46,6 @@ public class ReaderMenuPopWin extends BasePopupWindow implements PlayerListener{
 	private static final int FONT_INCREASE_UNIT = 1;
 	private static final int MAX_MENU_SIZE = 5;
 	private Activity mActivity;
-	private Handler mHandler;
 	private Book mBook;
 	private IActionCallback mActionCallback;
 	private CheckedGridView mGridView;
@@ -77,11 +77,12 @@ public class ReaderMenuPopWin extends BasePopupWindow implements PlayerListener{
 	private ImageButton mVoiceStateBut;
 	private boolean isVoicePlay;
 	private AudioManager mAudioManager;
+    private ScreenUtil mScreenUtil;
 	public ReaderMenuPopWin(View parent,Activity activity,Book book,IActionCallback callback) {
 		super(parent, LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT);
 		mActivity = activity;
+        mScreenUtil = new ScreenUtil(activity);
 		mReadSetting = ReadSetting.getInstance(mActivity);
-		mHandler = new Handler(Looper.getMainLooper());
 		mBook = book;
 		mActionCallback = callback;
 		//设置屏幕亮度
@@ -373,11 +374,11 @@ public class ReaderMenuPopWin extends BasePopupWindow implements PlayerListener{
 				}
 			});
 			mBrightessSettingView.findViewById(R.id.brightness_auto_but).setOnClickListener(new OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					//TODO 亮度自动调整
-				}
-			});
+                @Override
+                public void onClick(View v) {
+                    //TODO 亮度自动调整
+                }
+            });
 		}
 		seekBar = (SeekBar) mBrightessSettingView.findViewById(R.id.brightness_seek);
 		WindowManager.LayoutParams lp = mActivity.getWindow().getAttributes();
@@ -567,15 +568,9 @@ public class ReaderMenuPopWin extends BasePopupWindow implements PlayerListener{
 	@Override
 	protected void onPreShow() {
 		hideAllViews();
-//		mHandler.removeCallbacks(mFullScreenRunnable);
-//		if(Build.MANUFACTURER.equals(Manufacturer.SAMSUNG)){
-//			mActivity.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-//		}else{
-//			mActivity.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN, WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-//		}
-	//	WindowManager.LayoutParams attrs = mActivity.getWindow().getAttributes();
-	//	attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
-	//	mActivity.getWindow().setAttributes(attrs);
+
+        mScreenUtil.showNavigationBar();
+
 		if(!ReaderMediaPlayer.getInstance().isPlayerStop()){
 			mVoiceLayout.setVisibility(View.GONE);
 		}else{
@@ -590,8 +585,7 @@ public class ReaderMenuPopWin extends BasePopupWindow implements PlayerListener{
 	@Override
 	protected void onDismiss() {
 		super.onDismiss();
-//		mHandler.removeCallbacks(mFullScreenRunnable);
-//		mHandler.postDelayed(mFullScreenRunnable,500);
+        mScreenUtil.hideNavigationBar();
 	}
 
 	@Override
@@ -673,20 +667,7 @@ public class ReaderMenuPopWin extends BasePopupWindow implements PlayerListener{
 		}
 		return false;
 	}
-	
-	private Runnable mFullScreenRunnable = new Runnable() {
-		@Override
-		public void run() {
-//			if(Build.MANUFACTURER.equals(Manufacturer.SAMSUNG)){
-//				mActivity.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-//			}else{
-//				mActivity.getWindow().setFlags(~WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN, WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-//			}
-			WindowManager.LayoutParams attrs = mActivity.getWindow().getAttributes();
-			attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
-			mActivity.getWindow().setAttributes(attrs);	
-		}
-	};
+
 	
 	public interface IActionCallback{
 		public int getLayoutChapterProgress();

@@ -67,6 +67,8 @@ import com.season.bookreader.model.Book;
 import com.season.bookreader.tagspan.ExpandTagHandler;
 import com.season.bookreader.tagspan.ReaderMediaPlayer;
 import com.season.bookreader.view.BaseReadView;
+import com.season.lib.util.ScreenUtil;
+import com.season.lib.util.StatusBarUtil;
 import com.season.lib.util.ToastUtil;
 
 public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.PlayerListener,
@@ -104,6 +106,9 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 			finish();
 			return;
 		}
+        new ScreenUtil(this).hideNavigationBar();
+        StatusBarUtil.setColor(this, 0xff30302E);
+       // StatusBarUtil.setTranslucentForCoordinatorLayout(this, 122);
 
         ReaderMediaPlayer.init(mDataProvider);
 		mBook = new Book();
@@ -181,12 +186,15 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 			
 			@Override
 			public boolean onClickCallBack(MotionEvent ev) {
+                LogUtil.e("key>> onClickCallBack "+ "11" );
 				float x = ev.getX();
 				float y = ev.getY();
 				if (mReadView.dispatchClickEvent(ev)) {
+                    LogUtil.e("key>> onClickCallBack "+ "22" );
 					return true;
 				} else if (x > toolbarLP && x < toolbarRP && 
 						y > toolbarTP && y < toolbarBP) {
+                    LogUtil.e("key>> onClickCallBack "+ "44" );
 					showMenu();
 					return true;
 				}
@@ -195,6 +203,7 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 			
 			@Override
 			public void dispatchTouchEventCallBack(MotionEvent event) {
+                LogUtil.e("key>> onClickCallBack "+ "4444" );
 				onTouchEvent(event);
 			}
 		},false);
@@ -418,29 +427,38 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 
 	@Override
 	public boolean dispatchKeyEvent(KeyEvent event) {
+        LogUtil.e("key>>dispatchKeyEvent  "+ "11" );
 		if(mReadView.onActivityDispatchKeyEvent(event)){
 			return true;
 		}
+        LogUtil.e("key>>dispatchKeyEvent  "+ "22" );
 		return super.dispatchKeyEvent(event);
 	}
 
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent ev) {
+        LogUtil.e("key>>"+ "11" );
+
 		if (!isInit) {
 			return false;
 		}
+        LogUtil.e("key>>"+ "22" );
 		if(mReadView.onActivityDispatchTouchEvent(ev)){
 			return false;
 		}
+        LogUtil.e("key>>"+ "33" );
 		if(mCatalogLay.isShown()){
 			return super.dispatchTouchEvent(ev);
 		}
+        LogUtil.e("key>>"+ "44" );
         if(mReadView.handlerSelectTouchEvent(ev, this)){
             return false;
         }
+        LogUtil.e("key>>"+ "55" );
 		if(mClickDetector.onTouchEvent(ev)){
 			return false;
 		}
+        LogUtil.e("key>>"+ "66" );
 		return super.dispatchTouchEvent(ev);
 	}
 
@@ -451,6 +469,7 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 
     @Override
 	public boolean onTouchEvent(MotionEvent ev) {
+        LogUtil.e("key>>onTouchEvent  "+ "66" );
         if(isPullEnabled() && mAbsVerGestureAnimController.handlerTouch(ev, this)){
             return false;
         }
@@ -464,60 +483,6 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 	}
 
 
-	@Override
-	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		if ((!isInit) && keyCode != KeyEvent.KEYCODE_BACK) {
-			return true;
-		}
-		if (keyCode == KeyEvent.KEYCODE_BACK) {
-			if (mReaderMenuPopWin.isShowing()) {
-				dismissMenu();
-				return true;
-			}
-			if (mCatalogLay.isShown()) {
-				showReaderContentView();
-				return true;
-			}
-		}
-		if(!ReaderMediaPlayer.getInstance().isNeedControlVolume()){
-			if(keyCode == KeyEvent.KEYCODE_VOLUME_UP){
-				return true;
-			}
-			if(keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
-				if(mReadView != null){
-					return true;
-				}
-			}
-		}
-		return super.onKeyUp(keyCode, event);
-	}
-	
-	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		if ((!isInit) && keyCode != KeyEvent.KEYCODE_BACK) {
-			return true;
-		}
-		if(!ReaderMediaPlayer.getInstance().isNeedControlVolume()){
-			if(keyCode == KeyEvent.KEYCODE_VOLUME_UP){
-				mReadView.gotoPrePage();
-				return true;
-			}
-			if(keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
-				mReadView.gotoNextPage();
-				return true;
-			}
-		}
-		if (keyCode == KeyEvent.KEYCODE_MENU) {//直接监听，不走模拟系统menu方式。由于不明原因，系统方式，onMenuOpen调不到
-			if (!mReaderMenuPopWin.isShowing()) {
-				showMenu();
-			} else {
-				dismissMenu();
-			}
-		   return true;
-		}  
-	    return super.onKeyDown(keyCode, event);
-	}
-	
 	private String getBookFielPath(){
 		String pathDir = getCacheDir() + File.separator;
         String path =pathDir + "book.epub";
@@ -620,7 +585,7 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 
     @Override
     public boolean hasShowBookMark(int chapterId, int pageStart, int pageEnd) {
-        return false;
+        return BookMarkDatas.getInstance().isPageMarked(chapterId, pageStart, pageEnd);
     }
 
     @Override
@@ -711,40 +676,6 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 							opts.inScaled = false;
 							opts.inPurgeable = true;
 							bitmap = BitmapFactory.decodeStream(is, null, opts);
-//							DisplayMetrics display = getResources().getDisplayMetrics();
-//							ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//							byte[] buffer = new byte[1024];
-//							while(is.read(buffer) != -1){
-//								baos.write(buffer);
-//							}
-//							is.close();
-//							buffer = baos.toByteArray();
-//							baos.close();
-//							baos = null;
-//							Options opts = new BitmapFactory.Options();
-//							opts.inScaled = false;
-//					        opts.inJustDecodeBounds = true;  
-//					        BitmapFactory.decodeByteArray(buffer,0,buffer.length,opts);
-//					        int targetW = display.widthPixels;
-//					        int targetH = display.heightPixels;
-//					        int imgW = opts.outWidth;
-//					        int imgH = opts.outHeight;  
-//					        int scaled = 100;
-//					        if(imgW > targetW || imgH > targetH){
-//								int gapW = imgW - targetW;
-//								int gapH = imgH - targetH;
-//								if(gapW > gapH){
-//									scaled = (int) (targetW * 1f / imgW * 100);
-//								}else{
-//									scaled = (int) (targetH * 1f / imgH * 100);
-//								}
-//							}
-//					        opts.inTargetDensity = scaled;
-//							opts.inDensity = 100;
-//							opts.inPreferredConfig = Bitmap.Config.RGB_565;
-//							opts.inScaled = true;
-//					        opts.inJustDecodeBounds = false;
-//					        bitmap = BitmapFactory.decodeByteArray(buffer,0,buffer.length,opts);
 						}
 					} catch (Exception e) {
 					}

@@ -3,6 +3,8 @@ package com.season.bookreader;
 import android.app.Application;
 import android.content.Context;
 import android.os.Handler;
+import android.view.View;
+import android.view.WindowManager;
 
 import com.season.lib.util.ContextUtil;
 
@@ -26,4 +28,6 @@ public class BaseApplication extends Application {
 	public static Handler getHandler() {
 		return mMyAndroidApplication.mHandler;
 	}
+
+
 }
