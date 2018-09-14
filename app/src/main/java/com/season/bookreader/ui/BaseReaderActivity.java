@@ -1,26 +1,10 @@
 package com.season.bookreader.ui;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.BitmapFactory.Options;
-import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -36,42 +20,34 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.season.bookreader.R;
 import com.season.bookreader.anim.AbsVerGestureAnimController;
 import com.season.bookreader.bookmarks.BookMark;
 import com.season.bookreader.bookmarks.BookMarkDatas;
 import com.season.bookreader.digests.AbsTextSelectHandler;
-import com.season.bookreader.view.AbsReadView;
-import com.season.bookreader.view.BaseReadView2;
-import com.season.bookreader.view.EpubReadView;
-import com.season.bookreader.view.IReaderView;
-import com.season.bookreader.view.PullRefreshLayout;
-import com.season.lib.bookformats.BookInfo;
-import com.season.lib.bookformats.Catalog;
-import com.season.lib.bookformats.Chapter;
-import com.season.lib.bookformats.FormatPlugin;
-import com.season.lib.bookformats.PluginManager;
-import com.season.lib.bookformats.epub.Resource;
-import com.season.lib.os.SyncThreadPool;
-import com.season.lib.text.html.CssProvider;
-import com.season.lib.text.html.CssProvider.ICssLoader;
-import com.season.lib.text.html.DataProvider;
-import com.season.lib.text.html.HtmlParser.TagHandler;
-import com.season.lib.text.html.ICssProvider;
-import com.season.lib.util.EncryptUtils;
-import com.season.lib.util.FileUtil;
-import com.season.lib.util.LogUtil;
-import com.season.bookreader.R;
 import com.season.bookreader.fragment.CatalogView;
 import com.season.bookreader.fragment.ReaderMenuPopWin;
 import com.season.bookreader.model.Book;
-import com.season.bookreader.tagspan.ExpandTagHandler;
-import com.season.bookreader.tagspan.ReaderMediaPlayer;
 import com.season.bookreader.view.BaseReadView;
+import com.season.bookreader.view.IReaderView;
+import com.season.bookreader.view.PullRefreshLayout;
+import com.season.bookreader.view.ReadTxtView;
+import com.season.lib.bookformats.BookInfo;
+import com.season.lib.bookformats.Catalog;
+import com.season.lib.os.SyncThreadPool;
+import com.season.lib.util.FileUtil;
+import com.season.lib.util.LogUtil;
 import com.season.lib.util.ScreenUtil;
 import com.season.lib.util.StatusBarUtil;
 import com.season.lib.util.ToastUtil;
 
-public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.PlayerListener,
+import java.io.File;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+
+public class BaseReaderActivity extends Activity implements
         IReaderView.IReadCallback, AbsTextSelectHandler.ITouchEventDispatcher,
         PullRefreshLayout.OnPullListener, PullRefreshLayout.OnPullStateListener, AbsVerGestureAnimController.IVertialTouchEventDispatcher {
 	/**内容密钥*/
@@ -82,7 +58,6 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
     private BaseReadView mReadView;
 	private CatalogView mCatalogView;
 	private RelativeLayout mCatalogLay;
-	private FormatPlugin mPlugin;
 	private Book mBook;
 	private SyncThreadPool mSyncThreadPool;
 	private ReaderMenuPopWin mReaderMenuPopWin;
@@ -110,7 +85,6 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
         StatusBarUtil.setColor(this, 0xff30302E);
        // StatusBarUtil.setTranslucentForCoordinatorLayout(this, 122);
 
-        ReaderMediaPlayer.init(mDataProvider);
 		mBook = new Book();
 		mBook.setBookId("00000");
 		mSyncThreadPool = new SyncThreadPool();
@@ -131,7 +105,6 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 		initClickDetector();
 		init();
         initPullView();
-		ReaderMediaPlayer.getInstance().addPlayerListener(this);
 
         overridePendingTransition(0, 0);
         LogUtil.e("status  onCreated");
@@ -172,7 +145,6 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
         LogUtil.e("status  onDestroy");
 		if(mSyncThreadPool != null){
 			mSyncThreadPool.destroy();
-			ReaderMediaPlayer.getInstance().release();
 			mReadView.onDestroy();
 		}
 	}
@@ -303,7 +275,7 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 
 			@Override
 			public void selectCatalog(Catalog catalog) {
-				mReadView.gotoChapter(mPlugin.getChapterIndex(catalog), true);
+				mReadView.gotoChapter(catalog, true);
 			}
 
 			@Override
@@ -336,7 +308,7 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 
 			@Override
 			public BookInfo getBookInfo() {
-				return mPlugin.getBookInfo();
+				return mReadView.getBookInfo();
 			}
 		});
 	}
@@ -361,14 +333,14 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 
 	protected void showReaderCatalogView() {
 		mReadView.onHideContentView();
-		if (mCatalogView != null && mPlugin != null && mCatalogView.isShowing == false) {
+		if (mCatalogView != null && mCatalogView.isShowing == false) {
 			if (mCatalogView.getParent() == null) {
 				mCatalogLay.addView(mCatalogView);
 			}
 			mCatalogView.setVisibility(View.VISIBLE);
 			mCatalogView.isShowing = true;
 			mCatalogLay.setVisibility(View.VISIBLE);
-			mCatalogView.setCatalogData(mPlugin.getCatalog());
+		//	mCatalogView.setCatalogData(mPlugin.getCatalog());
 			Animation trans1 = new TranslateAnimation(
 					Animation.ABSOLUTE, -screenWidth, Animation.ABSOLUTE,
 					0.0f, Animation.RELATIVE_TO_SELF, 0.0f,
@@ -500,20 +472,21 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 			@Override
 			public void run() {
 				try {
-					InputStream is = getResources().openRawResource(R.drawable.book);
+					InputStream is = getResources().openRawResource(R.drawable.booktxt);
 					mBook.setPath(getBookFielPath());
 					if(!FileUtil.copyFileToFile(mBook.getPath(), is)){
                         LogUtil.e("status  error");
 			        	finish();
 			        	return;
 					}
-					mPlugin = PluginManager.instance().getPlugin(
-							mBook.getPath(),secretKey);
-				// 书籍信息
-					final BookInfo bookInfo = mPlugin.getBookInfo();
-					bookInfo.id = mBook.getBookId();
-					mBook.setAuthor(bookInfo.author);
-					mBook.setBookName(bookInfo.title);
+//                    FormatPlugin mPlugin = PluginManager.instance().getPlugin(
+//							mBook.getPath(),secretKey);
+//				// 书籍信息
+//					final BookInfo bookInfo = mPlugin.getBookInfo();
+//					bookInfo.id = mBook.getBookId();
+//					mBook.setAuthor(bookInfo.author);
+//					mBook.setBookName(bookInfo.title);
+//                    mCatalogView.setBookInfo(bookInfo.title, bookInfo.author);
 					requestCatalogIndex = 0;
 					if(requestCatalogIndex == 0 && requestPageCharIndex == 0){
 						requestPageCharIndex = 0;
@@ -522,11 +495,11 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
 					runOnUiThread(new Runnable() {
 						@Override
 						public void run() {
-                            mReadView = new EpubReadView(BaseReaderActivity.this, mBook, BaseReaderActivity.this);
+                            mReadView = new ReadTxtView(BaseReaderActivity.this, mBook, BaseReaderActivity.this);
+                         //   mReadView = new EpubReadView(BaseReaderActivity.this, mBook, BaseReaderActivity.this);
                             mReadContainerView.addView(mReadView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                             isInit = true;
                             mReadView.onCreate(null);
-							mCatalogView.setBookInfo(bookInfo.title, bookInfo.author);
 
                             initMenu();
 							mReadView.onInitReaderInBackground(requestCatalogIndex, requestPageCharIndex, secretKey);
@@ -597,132 +570,6 @@ public class BaseReaderActivity extends Activity implements ReaderMediaPlayer.Pl
     public void setCebBookId(String cebBookId) {
 
     }
-
-	@Override
-	public void onPlayStateChange(int state, String voiceSrc) {
-		if(state == ReaderMediaPlayer.STATE_COMPLETION){
-			String newPlaySrc = null;
-			if(!TextUtils.isEmpty(voiceSrc)){
-				try {
-					int start = voiceSrc.lastIndexOf("-") + 1;
-					int end = voiceSrc.lastIndexOf(".");
-					String indexStr = voiceSrc.substring(start, end);
-					if(TextUtils.isDigitsOnly(indexStr)){
-						int voiceIndex = Integer.valueOf(indexStr);
-						if(voiceIndex >= 0){
-							newPlaySrc = voiceSrc.substring(0, start) 
-									+ (voiceIndex + 1)
-									+ voiceSrc.substring(end, voiceSrc.length());
-							if(!mDataProvider.hasData(newPlaySrc)){
-								newPlaySrc = null;
-							}
-						}
-					}
-				} catch (Exception e) {}
-			}
-			if(newPlaySrc != null){
-				ReaderMediaPlayer.getInstance().startVioce(newPlaySrc);
-			}else{
-				ReaderMediaPlayer.getInstance().stop();
-			}
-		}
-	}
-	
-	@Override
-	public void onProgressChange(long currentPosition, long maxPosition,
-			String voiceSrc) {
-	}
-	
-	private CssProvider mCssProvider = new CssProvider(new ICssLoader() {
-		@Override
-		public String load(String path) {
-			try {
-				Resource resource = mPlugin.findResource(path);
-				byte[] data = null;
-				if(resource != null){
-					if (TextUtils.isEmpty(secretKey)) {
-						data = resource.getData();
-					}else {
-						data = EncryptUtils.decryptByAES(resource.getData(),secretKey);
-					}
-				}
-				if (data != null) {
-					return new String(data);
-				}
-			} catch (Exception e) {
-			}
-			return null;
-		}
-	});
-	
-	private DataProvider mDataProvider = new DataProvider() {
-		
-		@Override
-		public Drawable getDrawable(final String source,
-				final DrawableContainer drawableContainer) {
-			Drawable drawable = new ColorDrawable(Color.TRANSPARENT);
-			mSyncThreadPool.addTask(new Runnable() {
-				Bitmap bitmap = null;
-				@Override
-				public void run() {
-					if(drawableContainer.isInvalid()){
-						return;
-					}
-					try {
-						InputStream is = getDataStream(source);
-						if (is != null) {
-							Options opts = new BitmapFactory.Options();
-							opts.inPreferredConfig = Bitmap.Config.RGB_565;
-							opts.inScaled = false;
-							opts.inPurgeable = true;
-							bitmap = BitmapFactory.decodeStream(is, null, opts);
-						}
-					} catch (Exception e) {
-					}
-					runOnUiThread(new Runnable() {
-						@Override
-						public void run() {
-							BitmapDrawable bitmapDrawable = null;
-							if (bitmap != null) {
-								bitmapDrawable = new BitmapDrawable(
-										bitmap);
-								bitmapDrawable
-										.setTargetDensity(getResources()
-												.getDisplayMetrics().densityDpi);
-							}
-							drawableContainer
-									.setDrawable(bitmapDrawable);
-						}
-					});
-				}
-			});
-			return drawable;
-		}
-
-		@Override
-		public Context getContext() {
-			return getApplicationContext();
-		}
-
-		@Override
-		public InputStream getDataStream(String source) throws IOException {
-			Resource resource = mPlugin.findResource(source);
-			if(resource != null){
-				if (TextUtils.isEmpty(secretKey)) {
-					return resource.getDataStream();
-				}else {
-					return EncryptUtils.decryptByAES(resource.getDataStream(),secretKey);
-				}
-			}
-			return null;
-		}
-
-		@Override
-		public boolean hasData(String source) {
-			Resource resource = mPlugin.findResource(source);
-			return resource != null;
-		}
-	};
 
     @Override
     public void dispatchTouchEventCallBack(MotionEvent ev) {

@@ -15,6 +15,7 @@ import android.widget.GridView;
 
 import com.season.bookreader.R;
 import com.season.bookreader.model.BookDigestColorItem;
+import com.season.lib.util.ScreenUtil;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -25,7 +26,7 @@ public class BookDigestsRemarksDialog extends Dialog {
 	public final static int GREEN = Color.parseColor("#66cc00") + 0x66000000;
 	public final static int BLUE = Color.parseColor("#6de8d5") + 0x66000000;
 	public final static int PINK = Color.parseColor("#f898f8") + 0x66000000;
-	public final static int HSPAC = 5;
+    public final static int HSPAC = 5;
 	public final static int LAYOUT_MARGIN = 5;
 	private EditText mRemarks_et;
 	private AbsTextSelectHandler mTextSelectHandler;
@@ -49,15 +50,14 @@ public class BookDigestsRemarksDialog extends Dialog {
 		this.mBookDigests = bookDigests;
 	}
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-	
-		super.onCreate(savedInstanceState);
+    protected void onCreate(Bundle savedInstanceState) {
+
+        super.onCreate(savedInstanceState);
 		setContentView(R.layout.dialog_edit_bookdigest_remarks);
 //		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
 		mRemarks_et = (EditText) findViewById(R.id.remarks_edit);
 		EditText content = (EditText) findViewById(R.id.digests_content);
 		if(mBookDigests == null){
-			
 			mBookDigests = mTextSelectHandler.getCurrentBookDigests();
 		}
 		if(mBookDigests.getContent() == null){
@@ -71,6 +71,8 @@ public class BookDigestsRemarksDialog extends Dialog {
 			mRemarks_et.setText(mBookDigests.getMsg());
 		}
 		preColorView();
+
+        ScreenUtil.hideNavigationBar(this);
 	
 	}
 	

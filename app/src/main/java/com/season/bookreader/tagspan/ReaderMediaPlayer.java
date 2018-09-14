@@ -54,6 +54,9 @@ public class ReaderMediaPlayer extends BaseMediaPlayer {
 	} 
 	
 	public static synchronized ReaderMediaPlayer getInstance(){
+        if(mInstance == null){
+            return new ReaderMediaPlayer(null);
+        }
 		return mInstance;
 	}
 	
