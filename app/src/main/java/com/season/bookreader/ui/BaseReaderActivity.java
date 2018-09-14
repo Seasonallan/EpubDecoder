@@ -502,7 +502,13 @@ public class BaseReaderActivity extends Activity implements
                             mReadView.onCreate(null);
 
                             initMenu();
-							mReadView.onInitReaderInBackground(requestCatalogIndex, requestPageCharIndex, secretKey);
+
+                            new Thread() {
+                                @Override
+                                public void run() {
+                                    mReadView.onInitReaderInBackground(requestCatalogIndex, requestPageCharIndex, secretKey);
+                                }
+                            }.start();
 						}
 					});
 				} catch (Exception e) {

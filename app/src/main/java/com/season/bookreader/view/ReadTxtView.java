@@ -503,22 +503,35 @@ public class ReadTxtView extends BaseReadView implements TxtUmdBasePlugin.IScree
         try {
             mPlugin.openBook(mBook.getPath(), Constants.BOOKS_TEMP);
         } catch (Exception e) {
+            e.printStackTrace();
             mPlugin = null;
         }
+        LogUtil.e("init" + mPlugin);
 		runOnUiThread(new Runnable() {
-			
-			@Override
-			public void run() {
-                if(mPlugin != null){
-                    createTextSelectHandler();
+
+            @Override
+            public void run() {
+                if (mPlugin != null) {
                     requestLayout();
                 }
-			}
-		});
+            }
+        });
 		return mPlugin != null? SUCCESS: ERROR_GET_CONTENT_INFO;
-	} 
+	}
 
-	@Override
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+
+        if (right - left < 10){
+            return;
+        }
+        
+        createTextSelectHandler();
+
+    }
+
+    @Override
 	public boolean onActivityDispatchTouchEvent(MotionEvent ev) {
 		return false;
 	}
@@ -533,10 +546,12 @@ public class ReadTxtView extends BaseReadView implements TxtUmdBasePlugin.IScree
 	}
 
     private void createTextSelectHandler(){
+        LogUtil.e("init mTextSelectHandler " + getMeasuredWidth()+", "+getMeasuredHeight());
         if(mTextSelectHandler == null || mTextSelectHandler.isChangeSize(getMeasuredWidth(), getMeasuredHeight())){
             if(mTextSelectHandler != null){
                 mTextSelectHandler.releaseSpan();
             }
+            LogUtil.e("init mTextSelectHandler " + getMeasuredWidth()+", "+getMeasuredHeight());
             mSelectTextsChapterIndex = null;
             mTextSelectHandler = new TextSelectHandler(getMeasuredWidth(),getMeasuredHeight());
             mTextSelectHandler.setSelectorLocationListener(new SelectorControlView(this,(Activity) getContext()));
