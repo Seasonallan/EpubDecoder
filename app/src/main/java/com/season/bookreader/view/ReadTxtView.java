@@ -11,6 +11,7 @@ import android.graphics.RectF;
 import android.os.Bundle;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -50,7 +51,6 @@ public class ReadTxtView extends BaseReadView implements TxtUmdBasePlugin.IScree
 	
 	public ReadTxtView(Context context, Book book, IReadCallback readCallback) {
 		super(context,book,readCallback);
-        mTextSelectHandler = new TextSelectHandler(0, 0);
 	}
 
 	@Override
@@ -308,7 +308,7 @@ public class ReadTxtView extends BaseReadView implements TxtUmdBasePlugin.IScree
 		if(mPlugin == null || !mPlugin.isInit()){
 			return false;
 		}
-        LogUtil.i("onDrawPage  " + mTextSelectHandler.isSelect() + "......" + isCurrentPage);
+        LogUtil.i("onDrawPage  " +chapterIndex + "......" + pageIndex);
 		if (isCurrentPage) {
             if(mTextSelectHandler != null && mTextSelectHandler.isSelect()){
                 mTextSelectHandler.handlerDrawPre();
@@ -378,7 +378,7 @@ public class ReadTxtView extends BaseReadView implements TxtUmdBasePlugin.IScree
 		mCurrentPage = null;
 		mRequestPage = null;
 		if(isReLayout){
-			mPlugin.clearCache();
+			//mPlugin.clearCache();
 		} 
 		mCurrentPage = null;
 		mRequestPage = null;
@@ -523,11 +523,11 @@ public class ReadTxtView extends BaseReadView implements TxtUmdBasePlugin.IScree
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
 
-        if (right - left < 10){
-            return;
+        if (mTextSelectHandler == null){
+            LogUtil.e("onLayout " + (bottom - top));
+            createTextSelectHandler();
         }
-        
-        createTextSelectHandler();
+
 
     }
 

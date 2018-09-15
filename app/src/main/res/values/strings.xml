@@ -1,5 +1,5 @@
 <resources>
-	<string name="app_name">天翼阅读Epub3.0</string>
+	<string name="app_name">阅读器</string>
 	<string name="btn_text_catalog">目录</string>
 	<string name="btn_text_bookmark">书签</string>
 	<string name="btn_text_bookdigest">笔记</string>

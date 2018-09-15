@@ -24,7 +24,7 @@ import com.season.lib.util.LogUtil;
  * @email 451360508@qq.com
  */
 public abstract class TxtUmdBasePlugin {
-	private boolean DEBUG = false;
+	private boolean DEBUG = true;
 	protected void log(String... logs) {
 		if(DEBUG){ 
 			String logStr = "";
@@ -156,10 +156,13 @@ public abstract class TxtUmdBasePlugin {
 
 	public int containStartId(int startId){
 		Set<String> keyVec = mCurrentPageStringVectorMap.keySet();
+        log("getPageStartEndIndex" + mCurrentPageStringVectorMap.size());
 		for (String key : keyVec) {
+            log(key);
 			String[] keySpe = key.split("_");
 			if(keySpe != null && keySpe.length == 3 && 
 			   keySpe[1].equals(startId+"") && keySpe[0].equals(getCurrentChapterIndex(false)+"")){
+                log("find it");
 				return Integer.parseInt(keySpe[2]);
 			}
 		}
@@ -209,6 +212,7 @@ public abstract class TxtUmdBasePlugin {
 	 */
 	public boolean onDraw(Canvas canvas, float x, float y, Paint paint,
 			float lineHeight, float lineSpacing,  float lineWidth) {
+        LogUtil.e("onDrawonDraw "+ mPageStart +","+ mPageEnd);
 		long c = System.currentTimeMillis();
 		Vector<String> currentPageStringVector = getCurrentPageStringVector();
 		if (currentPageStringVector == null
@@ -563,6 +567,7 @@ public abstract class TxtUmdBasePlugin {
 	 * 清空缓存
 	 */
 	public void clearCache() {
+        log("clear");
         _lastEndPosition = -1;
         _lastStartPosition = -1;
 		mCurrentPageStringVectorMap.clear();
@@ -585,7 +590,8 @@ public abstract class TxtUmdBasePlugin {
 		if (mPageStart % 2 != 0 && isUnicode()) {
 			mPageStart += (position == mBufferLength) ? -1 : 1;
 		}
-		mPageEnd = mPageStart; 
+		mPageEnd = mPageStart;
+        log("wtf>> "+ mPageStart);
 		if (position == mBufferLength) {
 			int start = containEndId(mPageEnd);
 			if(start >= 0){//缓存存在
@@ -601,13 +607,16 @@ public abstract class TxtUmdBasePlugin {
 			}
 		} else {
 			int end = containStartId(mPageStart);
+            log("wtf>> end= "+ end);
 			if(end >= 0){//缓存存在
 				mPageEnd = end;
 				return;
 			} 
 			if (isUmdDecode() || mand) {
+                log("wtf>> end=.0.  "+ end);
 				mPageEnd = pageDown(getCurrentChapterIndex(false), mPageEnd);
 			} else {
+                log("wtf>> --end= "+ end);
 				byte[] paraBuf = readParagraphBack(mPageStart);
 				mPageStart -= paraBuf.length;
 				// byte[] paraBuf = readParagraphForward(mPageEnd);

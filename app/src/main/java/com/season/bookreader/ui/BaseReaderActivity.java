@@ -29,11 +29,14 @@ import com.season.bookreader.fragment.CatalogView;
 import com.season.bookreader.fragment.ReaderMenuPopWin;
 import com.season.bookreader.model.Book;
 import com.season.bookreader.view.BaseReadView;
+import com.season.bookreader.view.EpubReadView;
 import com.season.bookreader.view.IReaderView;
 import com.season.bookreader.view.PullRefreshLayout;
 import com.season.bookreader.view.ReadTxtView;
 import com.season.lib.bookformats.BookInfo;
 import com.season.lib.bookformats.Catalog;
+import com.season.lib.bookformats.FormatPlugin;
+import com.season.lib.bookformats.PluginManager;
 import com.season.lib.os.SyncThreadPool;
 import com.season.lib.util.FileUtil;
 import com.season.lib.util.LogUtil;
@@ -427,7 +430,7 @@ public class BaseReaderActivity extends Activity implements
             return false;
         }
         LogUtil.e("key>>"+ "55" );
-		if(mClickDetector.onTouchEvent(ev)){
+		if(mClickDetector.onTouchEvent(ev, false)){
 			return false;
 		}
         LogUtil.e("key>>"+ "66" );
@@ -441,7 +444,7 @@ public class BaseReaderActivity extends Activity implements
 
     @Override
 	public boolean onTouchEvent(MotionEvent ev) {
-        LogUtil.e("key>>onTouchEvent  "+ "66" );
+        LogUtil.e("key>>onTouchEvent  " + "66");
         if(isPullEnabled() && mAbsVerGestureAnimController.handlerTouch(ev, this)){
             return false;
         }
@@ -454,16 +457,25 @@ public class BaseReaderActivity extends Activity implements
 		return super.onCreateOptionsMenu(menu);
 	}
 
-
-	private String getBookFielPath(){
-		String pathDir = getCacheDir() + File.separator;
+    private String getBookFielPath2(){
+        String pathDir = getCacheDir() + File.separator;
         String path =pathDir + "book.epub";
-		File fileDir = new File(pathDir);
-		if(!fileDir.exists()){
-			fileDir.mkdirs();
-		}
-		return path;
-	}
+        File fileDir = new File(pathDir);
+        if(!fileDir.exists()){
+            fileDir.mkdirs();
+        }
+        return path;
+    }
+
+    private String getBookFielPath(){
+        String pathDir = getCacheDir() + File.separator;
+        String path =pathDir + "text.txt";
+        File fileDir = new File(pathDir);
+        if(!fileDir.exists()){
+            fileDir.mkdirs();
+        }
+        return path;
+    }
 	
 	private void init() {
        new Thread() {
@@ -517,6 +529,60 @@ public class BaseReaderActivity extends Activity implements
 			}
 		}.start();
 	}
+
+
+    private void init2() {
+        new Thread() {
+            int requestPageCharIndex = 0;
+            int requestCatalogIndex = 0;
+            @Override
+            public void run() {
+                try {
+                    InputStream is = getResources().openRawResource(R.drawable.book);
+                    mBook.setPath(getBookFielPath2());
+                    if(!FileUtil.copyFileToFile(mBook.getPath(), is)){
+                        LogUtil.e("status  error");
+                        finish();
+                        return;
+                    }
+                    FormatPlugin mPlugin = PluginManager.instance().getPlugin(
+							mBook.getPath(),secretKey);
+				// 书籍信息
+					final BookInfo bookInfo = mPlugin.getBookInfo();
+					bookInfo.id = mBook.getBookId();
+					mBook.setAuthor(bookInfo.author);
+					mBook.setBookName(bookInfo.title);
+                    mCatalogView.setBookInfo(bookInfo.title, bookInfo.author);
+                    requestCatalogIndex = 0;
+                    if(requestCatalogIndex == 0 && requestPageCharIndex == 0){
+                        requestPageCharIndex = 0;
+                    }
+                    // 读章节信息
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            //mReadView = new ReadTxtView(BaseReaderActivity.this, mBook, BaseReaderActivity.this);
+                               mReadView = new EpubReadView(BaseReaderActivity.this, mBook, BaseReaderActivity.this);
+                            mReadContainerView.addView(mReadView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                            isInit = true;
+                            mReadView.onCreate(null);
+
+                            initMenu();
+
+                            new Thread() {
+                                @Override
+                                public void run() {
+                                    mReadView.onInitReaderInBackground(requestCatalogIndex, requestPageCharIndex, secretKey);
+                                }
+                            }.start();
+                        }
+                    });
+                } catch (Exception e) {
+                    LogUtil.e(TAG, e);
+                }
+            }
+        }.start();
+    }
 
     @Override
     public void onChapterChange(ArrayList<Catalog> chapters) {
@@ -739,6 +805,7 @@ public class BaseReaderActivity extends Activity implements
 
     @Override
     public void unVerticalTouchEventCallBack(MotionEvent ev) {
+        LogUtil.e("key>>unVerticalTouchEventCallBack  " + "66");
         onTouchEvent(ev);
     }
 
