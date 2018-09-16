@@ -337,7 +337,8 @@ public abstract class BaseHtmlReadView extends BaseReadView implements ReaderMed
 		}
         Rect displayFrame = new Rect();
         getWindowVisibleDisplayFrame(displayFrame);
-        mTextSelectHandler.setRectOffset(0, - displayFrame.top);
+        //mTextSelectHandler.setRectOffset(0, -displayFrame.top);
+        mTextSelectHandler.setRectOffset(0, 0);
 	}
 	
 	@Override

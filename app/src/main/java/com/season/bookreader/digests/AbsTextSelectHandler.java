@@ -429,8 +429,10 @@ public abstract class AbsTextSelectHandler{
 	protected void checkCurrentTouchSelectCursor(int x,int y){
 		Rect tempTopSelectCursor = new Rect(mTopSelectCursor);
 		Rect tempBottomSelectCursor = new Rect(mBottomSelectCursor);
-		tempTopSelectCursor.inset(-10, -10);
-		tempBottomSelectCursor.inset(-10, -10);
+	//	tempTopSelectCursor.inset(-10, -10);
+	//	tempBottomSelectCursor.inset(-10, -10);
+        LogUtil.i(TAG, "getWindowVisibleDisplayFrame "+ x +","+ y);
+        LogUtil.i(TAG, "getWindowVisibleDisplayFrame "+  tempBottomSelectCursor.left +","+ tempBottomSelectCursor.right +","+ tempBottomSelectCursor.top +","+ tempBottomSelectCursor.bottom);
 		if(tempTopSelectCursor.contains(x , y)){
 			mCurrentTouchSelectCursor = new TouchSelectRect(true, mTopSelectCursor);
 			LogUtil.i(TAG, "set mCurrentTouchSelectCursor isLeft " +

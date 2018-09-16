@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory;
 
 import com.season.bookreader.BaseApplication;
 import com.season.bookreader.R;
+import com.season.lib.util.BitmapUtil;
 
 import java.util.ArrayList;
 
@@ -28,6 +29,7 @@ public class TextSelectHandler extends AbsTextSelectHandler {
 		if(mTopSelectCursorBitmap == null){
 			Resources resources = getContext().getResources();
 			mTopSelectCursorBitmap = BitmapFactory.decodeResource(resources, R.drawable.icon_xuanqu_shang);
+            mTopSelectCursorBitmap = BitmapUtil.scale(mTopSelectCursorBitmap, 100);
 		}
 		return mTopSelectCursorBitmap;
 	}
@@ -37,6 +39,7 @@ public class TextSelectHandler extends AbsTextSelectHandler {
 		if(mBottomSelectCursorBitmap == null){
 			Resources resources = getContext().getResources();
 			mBottomSelectCursorBitmap = BitmapFactory.decodeResource(resources, R.drawable.icon_xuanqu_xia);
+            mBottomSelectCursorBitmap = BitmapUtil.scale(mBottomSelectCursorBitmap, 100);
 		}
 		return mBottomSelectCursorBitmap;
 	}

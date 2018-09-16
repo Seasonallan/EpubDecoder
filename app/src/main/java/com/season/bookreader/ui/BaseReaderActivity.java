@@ -477,7 +477,7 @@ public class BaseReaderActivity extends Activity implements
         return path;
     }
 	
-	private void init() {
+	private void init3() {
        new Thread() {
 			int requestPageCharIndex = 0;
 			int requestCatalogIndex = 0;
@@ -531,7 +531,7 @@ public class BaseReaderActivity extends Activity implements
 	}
 
 
-    private void init2() {
+    private void init() {
         new Thread() {
             int requestPageCharIndex = 0;
             int requestCatalogIndex = 0;

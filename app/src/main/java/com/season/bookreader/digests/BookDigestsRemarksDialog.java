@@ -72,11 +72,11 @@ public class BookDigestsRemarksDialog extends Dialog {
 		}
 		preColorView();
 
-        ScreenUtil.hideNavigationBar(this);
+       // ScreenUtil.hideNavigationBar(this);
 	
 	}
-	
-	private ArrayList<BookDigestColorItem> getItems(){
+
+    private ArrayList<BookDigestColorItem> getItems(){
 		ArrayList<BookDigestColorItem> items = new ArrayList<BookDigestColorItem>();
 		items.add(new BookDigestColorItem(YELLOW,-1,YELLOW == mBookDigests.getBGColor()));
 		items.add(new BookDigestColorItem(ORANGE,-1,ORANGE == mBookDigests.getBGColor()));

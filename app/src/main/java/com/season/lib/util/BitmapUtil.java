@@ -110,6 +110,14 @@ public class BitmapUtil {
 		return result;
 	}
 
+
+    public static Bitmap scale(Bitmap bitmap, float destinationHeight) {
+        Matrix matrix = new Matrix();
+        matrix.postScale(destinationHeight/bitmap.getHeight(), destinationHeight/bitmap.getHeight()); //长和宽放大缩小的比例
+        Bitmap resizeBmp = Bitmap.createBitmap(bitmap,0,0,bitmap.getWidth(),bitmap.getHeight(),matrix,true);
+        return resizeBmp;
+    }
+
 	public static Bitmap getImageFromInputStreamAutoScale(Context context, InputStream is) {
 		Bitmap result = null;
 		if (is == null) {

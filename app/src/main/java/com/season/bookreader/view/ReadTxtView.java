@@ -620,7 +620,9 @@ public class ReadTxtView extends BaseReadView implements TxtUmdBasePlugin.IScree
         updateSelectTexts(mCurrentChapterIndex);
         Rect displayFrame = new Rect();
         getWindowVisibleDisplayFrame(displayFrame);
-        mTextSelectHandler.setRectOffset(0, -displayFrame.top);
+        LogUtil.i("getWindowVisibleDisplayFrame  "+ displayFrame.top);
+        //mTextSelectHandler.setRectOffset(0, -displayFrame.top);
+        mTextSelectHandler.setRectOffset(0, 0);
     }
 
     private Integer mSelectTextsChapterIndex;
